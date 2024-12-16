@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Dino Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+            font-family: Arial, sans-serif; /* Default font style */
+        }
+        canvas {
+            display: block; /* Removes extra whitespace */
+            background: #f0f0f0 url('background.jpg') repeat-x; /* Repeating background image */
+            background-size: cover; /* Ensures image scales proportionally */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        // Get the canvas and its 2D rendering context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas dimensions to match the browser window
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Load images
+        const dinoImage = new Image();
+        dinoImage.src = 'dino.png'; // Replace with your dino image file
+        const obstacleImage = new Image();
+        obstacleImage.src = 'obstacle.png'; // Replace with your obstacle image file
+
+        // Dino character properties
+        let dino = {
+            x: 50, // Horizontal position
+            y: canvas.height - 100, // Vertical position
+            width: 50, // Character width
+            height: 50, // Character height
+            dy: 0, // Vertical velocity
+            gravity: 1, // Gravity effect on the character
+            jumpPower: -15, // Jump velocity
+            isJumping: false // Tracks if dino is mid-jump
+        };
+
+        // Obstacle properties and game variables
+        let obstacles = []; // Array to store obstacles
+        let frame = 0; // Frame counter
+        let score = 0; // Player score
+        let gameRunning = true; // Game state
+
+        // Function to draw the dino character with an image
+        function drawDino() {
+            ctx.drawImage(dinoImage, dino.x, dino.y, dino.width, dino.height);
+        }
+
+        // Function to handle obstacle generation and movement
+        function handleObstacles() {
+            // Create a new obstacle every 100 frames
+            if (frame % 100 === 0) {
+                const obstacleHeight = Math.random() * 50 + 20; // Random obstacle height
+                obstacles.push({
+                    x: canvas.width, // Start at the right edge of the screen
+                    y: canvas.height - obstacleHeight, // Position at the bottom
+                    width: 50, // Obstacle width
+                    height: obstacleHeight // Obstacle height
+                });
+            }
+
+            // Iterate through obstacles array
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= 5; // Move obstacle leftwards
+
+                // Draw obstacle using the image
+                ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+                // Check for collision with dino
+                if (
+                    dino.x < obstacle.x + obstacle.width && // Dino's right edge past obstacle's left edge
+                    dino.x + dino.width > obstacle.x && // Dino's left edge before obstacle's right edge
+                    dino.y < obstacle.y + obstacle.height && // Dino's bottom above obstacle's top
+                    dino.y + dino.height > obstacle.y // Dino's top below obstacle's bottom
+                ) {
+                    gameRunning = false; // End the game
+                }
+
+                // Remove obstacles that move off-screen
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacles.splice(index, 1);
+                    score++; // Increment score for each passed obstacle
+                }
+            });
+        }
+
+        // Function to handle dino movement and physics
+        function handleDino() {
+            dino.y += dino.dy; // Update dino's position based on velocity
+            dino.dy += dino.gravity; // Apply gravity
+
+            // Prevent dino from falling below the ground
+            if (dino.y + dino.height >= canvas.height) {
+                dino.y = canvas.height - dino.height;
+                dino.isJumping = false; // Reset jump state
+            }
+        }
+
+        // Function to display the score
+        function drawScore() {
+            ctx.fillStyle = 'black'; // Text color
+            ctx.font = '20px Arial'; // Text font and size
+            ctx.fillText(`Score: ${score}`, 20, 30); // Display score at the top-left corner
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!gameRunning) { // Check if the game is over
+                // Display "Game Over" message and final score
+                ctx.fillStyle = 'black';
+                ctx.font = '40px Arial';
+                ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 100, canvas.height / 2 + 50);
+                return; // Exit the game loop
+            }
+
+            // Clear the canvas for the next frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Call functions to update and draw game elements
+            drawDino();
+            handleObstacles();
+            handleDino();
+            drawScore();
+
+            frame++; // Increment the frame counter
+            requestAnimationFrame(gameLoop); // Request the next animation frame
+        }
+
+        // Event listener for jump action
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !dino.isJumping) { // Check for spacebar and jumping state
+                dino.dy = dino.jumpPower; // Apply jump velocity
+                dino.isJumping = true; // Set jumping state
+            }
+        });
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
